@@ -1,0 +1,11 @@
+# FaceFusion clonado por install.ps1 / install.sh (no se versiona)
+facefusion/
+
+# Estado local
+.provider
+*.log
+
+# Basura de Python
+__pycache__/
+*.pyc
+.venv/
