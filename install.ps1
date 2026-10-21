@@ -4,10 +4,9 @@
 #
 #   powershell -ExecutionPolicy Bypass -File .\install.ps1
 #
-param(
-    [switch]$Quality   # no hace nada aqui; se usa en run.ps1
-)
-$ErrorActionPreference = 'Stop'
+# Se puede ejecutar mas de una vez sin romper nada (reutiliza lo que ya existe).
+#
+$ErrorActionPreference = 'Continue'   # los comandos nativos escriben en stderr: se controla con $LASTEXITCODE
 $root = $PSScriptRoot
 Set-Location $root
 
@@ -35,18 +34,23 @@ $ff = Join-Path $root 'facefusion'
 if (Test-Path $ff) {
     Write-Host 'Ya existe la carpeta facefusion\, se reutiliza.'
 } else {
-    & git clone --depth 1 --branch 3.9.1 https://github.com/facefusion/facefusion.git $ff
+    & git clone --depth 1 --branch 3.9.1 https://github.com/facefusion/facefusion.git $ff 2>&1 | Out-Null
     if ($LASTEXITCODE -ne 0) {
-        Write-Host 'La etiqueta 3.9.1 no existe; se usa la ultima version.' -ForegroundColor Yellow
-        & git clone --depth 1 https://github.com/facefusion/facefusion.git $ff
+        Write-Host 'La etiqueta 3.9.1 no se pudo bajar; se usa la ultima version.' -ForegroundColor Yellow
+        & git clone --depth 1 https://github.com/facefusion/facefusion.git $ff 2>&1 | Out-Null
         if ($LASTEXITCODE -ne 0) { Fallo 'No se pudo clonar FaceFusion.' }
     }
 }
 
-Paso 'Creando el entorno de Python'
-$env:UV_LINK_MODE = 'copy'
-& uv venv -p 3.13 (Join-Path $ff '.venv')
-$py = Join-Path $ff '.venv\Scripts\python.exe'
+Paso 'Preparando el entorno de Python'
+$venv = Join-Path $ff '.venv'
+$py = Join-Path $venv 'Scripts\python.exe'
+if (Test-Path $py) {
+    Write-Host 'El entorno ya existe, se reutiliza.'
+} else {
+    & uv venv -p 3.13 $venv
+    if ($LASTEXITCODE -ne 0) { Fallo 'No se pudo crear el entorno de Python.' }
+}
 
 Paso 'Instalando dependencias (tarda unos minutos)'
 & uv pip install --python $py -r (Join-Path $ff 'requirements.txt')
@@ -64,7 +68,7 @@ if (Get-Command nvidia-smi -ErrorAction SilentlyContinue) {
     if ($LASTEXITCODE -ne 0) { Fallo 'No se pudo instalar onnxruntime-gpu.' }
     Set-Content -Path (Join-Path $root '.provider') -Value 'cuda' -Encoding ascii
 } else {
-    Write-Host 'Sin NVIDIA -> DirectML (Intel/AMD, DirectX 12)'
+    Write-Host 'Sin NVIDIA -> DirectML (Intel/AMD con DirectX 12)'
     & uv pip install --python $py 'onnxruntime-directml==1.24.4'
     if ($LASTEXITCODE -ne 0) { Fallo 'No se pudo instalar onnxruntime-directml.' }
     Set-Content -Path (Join-Path $root '.provider') -Value 'directml' -Encoding ascii

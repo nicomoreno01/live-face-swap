@@ -35,10 +35,14 @@ else
     || fallo 'No se pudo clonar FaceFusion.'
 fi
 
-paso 'Creando el entorno de Python'
+paso 'Preparando el entorno de Python'
 export UV_LINK_MODE=copy
-uv venv -p 3.13 facefusion/.venv
 PY="$ROOT/facefusion/.venv/bin/python"
+if [ -x "$PY" ]; then
+  echo 'El entorno ya existe, se reutiliza.'
+else
+  uv venv -p 3.13 facefusion/.venv
+fi
 
 paso 'Instalando dependencias (tarda unos minutos)'
 uv pip install --python "$PY" -r facefusion/requirements.txt

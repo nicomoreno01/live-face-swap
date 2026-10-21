@@ -11,7 +11,6 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 $root = $PSScriptRoot
-Set-Location $root
 
 $ff = Join-Path $root 'facefusion'
 $py = Join-Path $ff '.venv\Scripts\python.exe'
@@ -34,10 +33,14 @@ if ($Provider -eq 'cuda' -or $Quality) {
     $boost = '128x128'
 }
 
+# IMPORTANTE: hay que ejecutar desde dentro de facefusion\
+# (el programa resuelve sus layouts como rutas relativas al directorio actual).
+Set-Location $ff
+
 Write-Host "Motor: $Provider | modelo: $model | pixel boost: $boost" -ForegroundColor Cyan
 Write-Host 'Abriendo http://127.0.0.1:7860 ... (Ctrl+C para cerrar)' -ForegroundColor Cyan
 
-& $py (Join-Path $ff 'facefusion.py') run `
+& $py 'facefusion.py' run `
     --ui-layouts webcam `
     --execution-providers $Provider `
     --processors face_swapper `
