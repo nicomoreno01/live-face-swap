@@ -44,7 +44,9 @@ paso 'Instalando dependencias (tarda unos minutos)'
 uv pip install --python "$PY" -r facefusion/requirements.txt
 
 paso 'Eligiendo motor de IA'
-uv pip uninstall --python "$PY" onnxruntime >/dev/null 2>&1 || true
+# Quitar cualquier motor anterior antes de instalar el nuevo: comparten el modulo
+# `onnxruntime` y mezclarlos deja la importacion rota.
+uv pip uninstall --python "$PY" onnxruntime onnxruntime-directml onnxruntime-gpu >/dev/null 2>&1 || true
 if command -v nvidia-smi >/dev/null; then
   echo 'GPU NVIDIA detectada -> CUDA'
   uv pip install --python "$PY" onnxruntime-gpu

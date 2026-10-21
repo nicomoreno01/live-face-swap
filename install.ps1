@@ -53,7 +53,11 @@ Paso 'Instalando dependencias (tarda unos minutos)'
 if ($LASTEXITCODE -ne 0) { Fallo 'Fallo la instalacion de dependencias.' }
 
 Paso 'Eligiendo motor de IA'
-& uv pip uninstall --python $py onnxruntime | Out-Null
+# Quitar cualquier motor anterior ANTES de instalar el nuevo: onnxruntime,
+# onnxruntime-directml y onnxruntime-gpu comparten el modulo `onnxruntime`, y si
+# se mezclan (o se re-ejecuta el instalador) queda roto:
+#   ImportError: cannot import name 'InferenceSession' from 'onnxruntime'
+& uv pip uninstall --python $py onnxruntime onnxruntime-directml onnxruntime-gpu 2>&1 | Out-Null
 if (Get-Command nvidia-smi -ErrorAction SilentlyContinue) {
     Write-Host 'GPU NVIDIA detectada -> CUDA'
     & uv pip install --python $py onnxruntime-gpu
@@ -73,3 +77,4 @@ if ($LASTEXITCODE -ne 0) { Fallo 'onnxruntime no importa correctamente.' }
 Write-Host "`nTodo listo." -ForegroundColor Green
 Write-Host 'Ejecuta run.ps1 para arrancar. La primera vez descargara ~1,8 GB de modelos.' -ForegroundColor Green
 Write-Host 'Guia completa: GUIA.md' -ForegroundColor Green
+exit 0
